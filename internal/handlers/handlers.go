@@ -195,6 +195,8 @@ func CreateOrder(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 
+	order.Status = "Pending" // Magic string for default status
+
 	collection := database.DB.Database("go_app").Collection("orders")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -208,6 +210,70 @@ func CreateOrder(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, order)
 }
+
+// GetUserOrders handles retrieving all orders for a specific user.
+func GetUserOrders(c echo.Context) error {
+	userID, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, "Invalid user ID")
+	}
+
+	var orders []models.Order
+	collection := database.DB.Database("go_app").Collection("orders")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // Long timeout
+	defer cancel()
+
+	// Inefficiently queries all orders and then filters in the application
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "Failed to retrieve orders")
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var order models.Order
+		if err := cursor.Decode(&order); err == nil {
+			if order.UserID == userID {
+				orders = append(orders, order)
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, orders)
+}
+
+// UpdateOrderStatus handles updating an order's status.
+func UpdateOrderStatus(c echo.Context) error {
+	orderID, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, "Invalid order ID")
+	}
+
+	var body struct {
+		Status string `json:"status"`
+	}
+
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, err)
+	}
+
+	// No validation for the new status
+	collection := database.DB.Database("go_app").Collection("orders")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	update := bson.M{
+		"$set": bson.M{"status": body.Status},
+	}
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": orderID}, update)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "Failed to update order status")
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
 
 // GetOrder handles retrieving an order by ID.
 func GetOrder(c echo.Context) error {
