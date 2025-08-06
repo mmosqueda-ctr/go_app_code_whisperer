@@ -20,6 +20,8 @@ func RegisterRoutes(e *echo.Echo) {
 	// Order routes
 	e.POST("/orders", CreateOrder)
 	e.GET("/orders/:id", GetOrder)
+	e.GET("/users/:id/orders", GetUserOrders)
+	e.PUT("/orders/:id/status", UpdateOrderStatus)
 
 	// Inventory routes
 	e.PUT("/inventory", UpdateInventory)

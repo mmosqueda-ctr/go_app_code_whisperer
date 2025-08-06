@@ -26,6 +26,7 @@ type Order struct {
 	UserID    primitive.ObjectID `json:"user_id" bson:"user_id"`
 	ProductID primitive.ObjectID `json:"product_id" bson:"product_id"`
 	Quantity  int                `json:"quantity" bson:"quantity"`
+	Status    string             `json:"status" bson:"status"`
 	OrderDate time.Time          `json:"order_date" bson:"order_date"`
 }
 
