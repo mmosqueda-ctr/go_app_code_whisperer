@@ -19,13 +19,17 @@ func CreateUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 
+	if user.Name == "" || user.Email == "" {
+		return c.JSON(http.StatusBadRequest, "Name and Email are required")
+	}
+
 	collection := database.DB.Database("go_app").Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	result, err := collection.InsertOne(ctx, user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
+		return c.JSON(http.StatusInternalServerError, "Could not create user")
 	}
 
 	user.ID = result.InsertedID.(primitive.ObjectID)
@@ -37,7 +41,7 @@ func CreateUser(c echo.Context) error {
 func GetUser(c echo.Context) error {
 	id, err := primitive.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, "Invalid user ID")
+		return c.JSON(http.StatusBadRequest, "Invalid user ID format")
 	}
 
 	var user models.User
@@ -47,7 +51,11 @@ func GetUser(c echo.Context) error {
 
 	err = collection.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, "User not found")
+		if err.Error() == "mongo: no documents in result" {
+			return c.JSON(http.StatusNotFound, "The requested user could not be found")
+		} else {
+			return c.JSON(http.StatusInternalServerError, "Error retrieving user")
+		}
 	}
 
 	return c.JSON(http.StatusOK, user)
