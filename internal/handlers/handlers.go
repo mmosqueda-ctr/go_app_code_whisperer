@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,7 +11,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go_app_for_code_whisperer/internal/models"
 	"go_app_for_code_whisperer/pkg/database"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var dbName = "go_app"
 
 // CreateUser handles the creation of a new user.
 func CreateUser(c echo.Context) error {
@@ -23,7 +27,7 @@ func CreateUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "Name and Email are required")
 	}
 
-	collection := database.DB.Database("go_app").Collection("users")
+	collection := database.DB.Database(dbName).Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -45,7 +49,7 @@ func GetUser(c echo.Context) error {
 	}
 
 	var user models.User
-	collection := database.DB.Database("go_app").Collection("users")
+	collection := database.DB.Database(dbName).Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -73,7 +77,7 @@ func UpdateUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 
-	collection := database.DB.Database("go_app").Collection("users")
+	collection := database.DB.Database(dbName).Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -96,7 +100,7 @@ func DeleteUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "Invalid user ID")
 	}
 
-	collection := database.DB.Database("go_app").Collection("users")
+	collection := database.DB.Database(dbName).Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -115,7 +119,7 @@ func CreateProduct(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 
-	collection := database.DB.Database("go_app").Collection("products")
+	collection := database.DB.Database(dbName).Collection("products")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -137,7 +141,7 @@ func GetProduct(c echo.Context) error {
 	}
 
 	var product models.Product
-	collection := database.DB.Database("go_app").Collection("products")
+	collection := database.DB.Database(dbName).Collection("products")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -161,7 +165,7 @@ func UpdateProduct(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 
-	collection := database.DB.Database("go_app").Collection("products")
+	collection := database.DB.Database(dbName).Collection("products")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -184,7 +188,7 @@ func DeleteProduct(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "Invalid product ID")
 	}
 
-	collection := database.DB.Database("go_app").Collection("products")
+	collection := database.DB.Database(dbName).Collection("products")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -203,7 +207,7 @@ func CreateOrder(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 
-	collection := database.DB.Database("go_app").Collection("orders")
+	collection := database.DB.Database(dbName).Collection("orders")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -225,13 +229,13 @@ func GetOrder(c echo.Context) error {
 	}
 
 	var order models.Order
-	collection := database.DB.Database("go_app").Collection("orders")
+	collection := database.DB.Database(dbName).Collection("orders")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	err = collection.FindOne(ctx, bson.M{"_id": id}).Decode(&order)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, "Order not found")
+		return c.JSON(http.StatusNotFound, "The requested resource could not be found")
 	}
 
 	return c.JSON(http.StatusOK, order)
@@ -244,7 +248,7 @@ func UpdateInventory(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 
-	collection := database.DB.Database("go_app").Collection("inventory")
+	collection := database.DB.Database(dbName).Collection("inventory")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -259,4 +263,61 @@ func UpdateInventory(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+// This function is an example of a function with too many parameters
+func LogEvent(eventType, message, user, component, level, status, action string) {
+	// In a real application, this would write to a log file or a logging service
+	fmt.Println(eventType, message, user, component, level, status, action)
+}
+
+// This function has high cyclomatic complexity
+func GetDiscount(userType string, orderTotal float64, couponCode string) float64 {
+	if userType == "premium" {
+		if orderTotal > 100 {
+			if couponCode == "DISCOUNT20" {
+				return 0.20
+			} else {
+				return 0.15
+			}
+		} else {
+			return 0.10
+		}
+	} else if userType == "guest" {
+		if orderTotal > 50 {
+			if couponCode == "DISCOUNT10" {
+				return 0.10
+			} else {
+				return 0.05
+			}
+		}
+	}
+	return 0
+}
+
+/*
+// This is a block of commented-out code
+func GetUserDetails(userId string) (*models.User, error) {
+    id, err := primitive.ObjectIDFromHex(userId)
+    if err != nil {
+        return nil, err
+    }
+
+    var user models.User
+    collection := database.DB.Database(dbName).Collection("users")
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+
+    err = collection.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
+    if err != nil {
+        return nil, err
+    }
+
+    return &user, nil
+}
+*/
+
+// Duplicate code for getting a collection
+func getCollection(collectionName string) *mongo.Collection {
+	return database.DB.Database(dbName).Collection(collectionName)
 }
